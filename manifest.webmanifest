@@ -1,0 +1,16 @@
+{
+  "name": "SmartHomeSwitch Winsttool",
+  "short_name": "SHS Winsttool",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f8fc",
+  "theme_color": "#0053b3",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
