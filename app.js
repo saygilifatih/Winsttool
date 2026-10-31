@@ -54,14 +54,14 @@ if (Number(previous.version || 0) < 7 && (previous.sale || previous.purchase)) {
 }
 function fillSettings() {[...bolIds,...shopIds].forEach(id => $(id).value = settings[id]);}
 fillSettings();
-function saveState() {captureChannelCosts();persist('winsttool-state',{...previous,version:9,channelCosts,mode,period,purchaseMode,bolPurchaseMode,productPurchaseMode,productChannel:$('productChannel').value,...Object.fromEntries(productIds.map(id=>[id,$(id).value])),...Object.fromEntries(inputIds.map(id=>[id,$(id).value]))});}
+function saveState() {captureChannelCosts();persist('winsttool-state',{...previous,version:11,channelCosts,mode,period,purchaseMode,bolPurchaseMode,productPurchaseMode,productChannel:$('productChannel').value,...Object.fromEntries(productIds.map(id=>[id,$(id).value])),...Object.fromEntries(inputIds.map(id=>[id,$(id).value]))});}
 function valid(id) {const n=number($(id).value); const ok=Number.isFinite(n) && (!['bolOrders','orders'].includes(id) || Number.isInteger(n)) && (id!=='articlesPerOrder' || n>=1);$(id).setAttribute('aria-invalid',String(!ok));$(id).setCustomValidity(ok?'':'Vul een geldig positief getal in; bestellingen zijn hele aantallen.');return ok;}
 function result(net,costs,middle) {const profit=net-costs;return {net,costs,middle,profit,margin:net>0?profit/net*100:null};}
 function compute(values, costs, days, purchaseType, bolPurchaseType='amount') {
   const count=values.bolOrders, articles=count*costs.articlesPerOrder;
   const gross=values.sale;
   const bolPurchase=bolPurchaseType==='percentage'?gross/1.21*values.purchase/100:values.purchase;
-  const commission=articles*costs.fixedCommission+gross*costs.commissionRate/100;
+  const commission=articles*costs.fixedCommission+gross/1.21*costs.commissionRate/100;
   const bol=result(gross/1.21,bolPurchase+articles*costs.bolOther+commission+count*(costs.bolFulfilment+costs.shipping)+days*costs.bolDaily,commission);
   const net=values.revenue/1.21;
   const daily=days*(costs.ads+costs.rent+costs.shopOther);
@@ -105,7 +105,7 @@ function renderMode() {
   $('settingsEyebrow').textContent=mode==='bol'?'BOL.COM KOSTEN':'WEBSHOP KOSTEN';
   $('settingsIntro').textContent=mode==='bol'?'Kosten excl. btw. Vul je eigen tarieven in. Fulfilment is het gemiddelde per bestelling; vul verzending alleen apart in als die nog niet is inbegrepen.':'Kosten excl. btw. Dagkosten × 1, 7 of 30; fulfilment × bestellingen. Boek gedeelde vaste kosten maar één keer.';
   $('netSaleLabel').textContent='Netto omzet (excl. btw)';$('middleLabel').textContent=mode==='bol'?'Waarvan commissie':'Waarvan dagelijkse kosten';
-  $('note').textContent={bol:'21% btw. Commissie over omzet incl. btw + vast bedrag per artikel. Overige kosten per artikel; vaste kosten per dag. Controleer je tarieven in Instellingen.',webshop:'21% btw. Inkoop is het totaal voor de periode, of een percentage van netto omzet. Dagkosten tellen ook mee zonder bestellingen.',product:'21% btw. Inkooppercentage over de verkoopprijs excl. btw. Resultaat vóór vaste bedrijfskosten en winstbelasting. Bol-tarieven zijn voorbeelden: vul je eigen tarieven in.',total:'Marge = totale winst ÷ totale netto omzet. Vaste kosten tellen ook zonder omzet mee. Gedeelde kosten slechts bij één kanaal invoeren. Winst vóór inkomsten- of vennootschapsbelasting.'}[mode];
+  $('note').textContent={bol:'21% btw. Commissie excl. btw over omzet excl. btw + vast bedrag per artikel. Overige kosten per artikel; vaste kosten per dag. Controleer je tarieven in Instellingen.',webshop:'21% btw. Inkoop is het totaal voor de periode, of een percentage van netto omzet. Dagkosten tellen ook mee zonder bestellingen.',product:'21% btw. Inkooppercentage over de verkoopprijs excl. btw. Resultaat vóór vaste bedrijfskosten en winstbelasting. Bol-tarieven zijn voorbeelden: vul je eigen tarieven in.',total:'Marge = totale winst ÷ totale netto omzet. Vaste kosten tellen ook zonder omzet mee. Gedeelde kosten slechts bij één kanaal invoeren. Winst vóór inkomsten- of vennootschapsbelasting.'}[mode];
   document.querySelectorAll('[data-period]').forEach(b=>{b.classList.toggle('selected',Number(b.dataset.period)===period);b.setAttribute('aria-pressed',String(Number(b.dataset.period)===period));});
   document.querySelectorAll('[data-purchase-mode]').forEach(b=>{b.classList.toggle('selected',b.dataset.purchaseMode===purchaseMode);b.setAttribute('aria-pressed',String(b.dataset.purchaseMode===purchaseMode));});
   document.querySelectorAll('[data-bol-purchase-mode]').forEach(b=>{b.classList.toggle('selected',b.dataset.bolPurchaseMode===bolPurchaseMode);b.setAttribute('aria-pressed',String(b.dataset.bolPurchaseMode===bolPurchaseMode));});
@@ -138,7 +138,7 @@ $('reset').addEventListener('click',()=>{const ids=mode==='product'?['productSal
 function computeProduct(v,channel,purchaseType) {
  const net=v.productSale/1.21;
  const purchase=purchaseType==='percentage'?net*v.productPurchase/100:v.productPurchase;
- const fee=channel==='bol'?v.productFixed+v.productSale*v.productCommission/100:v.productPaymentFixed+v.productSale*v.productPayment/100;
+ const fee=channel==='bol'?v.productFixed+net*v.productCommission/100:v.productPaymentFixed+v.productSale*v.productPayment/100;
  const details={'Inkoop':purchase,[channel==='bol'?'Bol-commissie':'Betaalkosten']:fee,'Fulfilment':v.productFulfilment,'Verzending':v.productShipping,'Verpakking':v.productPackaging,'Advertenties':v.productAds};
  const r=result(net,Object.values(details).reduce((a,b)=>a+b,0),fee);r.details=details;return r;
 }
